@@ -1,0 +1,194 @@
+<%
+/*
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║  views/partials/factura-paper.ejs — ESTRUCTURA DE LA FACTURA    ║
+ * ║                                                                  ║
+ * ║  Variable requerida: `factura` (objeto Mongoose poblado)         ║
+ * ║                                                                  ║
+ * ║  ESTRUCTURA VISUAL:                                              ║
+ * ║                                                                  ║
+ * ║  ┌──────────┬──────────────────────┬───────────────────────┐    ║
+ * ║  │  LOGO    │   DATOS DE LA ASO    │  Consecutivo FAC-año  ║    ║
+ * ║  │ .inv-logo│ .inv-company-block   │  .inv-id              ║    ║
+ * ║  │          │ nombre, tel, correo  ├───────────────────────┤    ║
+ * ║  │          │                      │  Fecha + Hora         ║    ║
+ * ║  │          │                      │  .inv-date .inv-time  ║    ║
+ * ║  └──────────┴──────────────────────┴───────────────────────┘    ║
+ * ║  ┌───────────────────────────────────────────────────────────┐   ║
+ * ║  │  RECIBIMOS A NOMBRE DE: (asociado)  RECIBE: (cobrador)   │   ║
+ * ║  │  CONCEPTO | CANTIDAD | PRECIO                             │   ║
+ * ║  │  .inv-buyer              .inv-seller                      │   ║
+ * ║  └───────────────────────────────────────────────────────────┘   ║
+ * ║                                                                  ║
+ * ║  Para cambiar campos:                                            ║
+ * ║    Logo      → .inv-logo (cambiar src de la imagen)             ║
+ * ║    Empresa   → .inv-company-name                                ║
+ * ║    Telefono  → .inv-phone                                        ║
+ * ║    Correo    → .inv-email                                        ║
+ * ║    Consecutivo → .inv-id  (formato FAC-XXXX-AAAA)               ║
+ * ║    Fecha     → .inv-date                                         ║
+ * ║    Hora      → .inv-time                                         ║
+ * ║    Asociado  → .inv-buyer  (label: "Recibimos a nombre de:")     ║
+ * ║    Cobrador  → .inv-seller (label: "Recibe:")                    ║
+ * ║    Concepto  → .inv-item-concept                                 ║
+ * ║    Total     → .inv-total-amount                                 ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ */
+%>
+
+<div class="invoice-paper">
+
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN 1: ENCABEZADO
+       Tres columnas: Logo | Datos empresa | Consecutivo + Fecha
+       ══════════════════════════════════════════════ -->
+  <div class="inv-header-grid">
+
+    <!-- COLUMNA IZQUIERDA: Logo ADVCM -->
+    <div class="inv-col-logo">
+      <div class="inv-logo">
+        <!--
+          Logo A.D.V.C.M — Asociacion Deportiva de Voleibol Corazon Moraviano
+          Para reemplazar por imagen real: <img src="/img/logo.png" class="inv-logo-img" alt="ADVCM">
+        -->
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="96" height="96">
+          <!-- Arco azul exterior -->
+          <path d="M 82 18 A 45 45 0 0 1 82 82" fill="none" stroke="#0071B7" stroke-width="4.5" stroke-linecap="round"/>
+          <!-- Arco verde interior -->
+          <path d="M 74 26 A 34 34 0 0 1 26 74" fill="none" stroke="#00A29C" stroke-width="4" stroke-linecap="round"/>
+
+          <!-- Estrellas (3 en arco superior izquierdo) -->
+          <text x="20" y="28" font-size="9" fill="#c8c8c8" text-anchor="middle">&#9733;</text>
+          <text x="32" y="18" font-size="9" fill="#c8c8c8" text-anchor="middle">&#9733;</text>
+          <text x="44" y="13" font-size="9" fill="#c8c8c8" text-anchor="middle">&#9733;</text>
+
+          <!-- Balón de voleibol (centro) -->
+          <circle cx="52" cy="52" r="22" fill="#d0d8e0" stroke="#0071B7" stroke-width="2.5"/>
+          <!-- Líneas del balón -->
+          <path d="M 52 30 Q 62 42 60 62 Q 52 68 44 62 Q 42 42 52 30" fill="none" stroke="#0071B7" stroke-width="1.5"/>
+          <path d="M 30 52 Q 42 42 62 44 Q 68 52 62 60 Q 42 62 30 52" fill="none" stroke="#0071B7" stroke-width="1.5"/>
+          <path d="M 36 36 Q 52 30 68 36 Q 74 52 68 66" fill="none" stroke="#00A29C" stroke-width="1.2"/>
+
+          <!-- Texto A.D.V.C.M curvo arriba -->
+          <path id="arcTop" d="M 22 52 A 30 30 0 0 1 82 52" fill="none"/>
+          <text font-size="8" font-weight="bold" fill="#1a1a1a" font-family="sans-serif">
+            <textPath href="#arcTop" startOffset="15%">A.D.V.C.M</textPath>
+          </text>
+
+          <!-- Texto MORAVIA curvo abajo -->
+          <path id="arcBot" d="M 22 58 A 30 30 0 0 0 82 58" fill="none"/>
+          <text font-size="9" font-weight="900" fill="#1a1a1a" font-family="sans-serif">
+            <textPath href="#arcBot" startOffset="12%">MORAVIA</textPath>
+          </text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- COLUMNA CENTRAL: Datos estáticos de la organización -->
+    <div class="inv-col-empresa">
+      <div class="inv-company-name">Asociacion Deportiva de Voleibol<br>Corazon Moraviano</div>
+      <div class="inv-company-details">
+        <div class="inv-company-detail-row">
+          <span class="inv-detail-icon" style="color:#828282;">&#128196;</span>
+          <span class="inv-phone">Cedula Juridica: 3-002-933405</span>
+        </div>
+        <div class="inv-company-detail-row">
+          <span class="inv-detail-icon" style="color:#00A29C;">&#9993;</span>
+          <span class="inv-email">advocomo@gmail.com</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Consecutivo + Fecha/Hora -->
+    <div class="inv-col-meta">
+      <div class="inv-consecutivo-box">
+        <div class="inv-consecutivo-label">Recibo por Dinero</div>
+        <div class="inv-id"><%= factura.numeroFactura %></div>
+      </div>
+      <div class="inv-datetime-box">
+        <div class="inv-date-label">Fecha y Hora</div>
+        <div class="inv-date"><%= factura.fecha %></div>
+        <div class="inv-time"><%= factura.hora || '' %></div>
+      </div>
+    </div>
+  </div><!-- /inv-header-grid -->
+
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN 2: CUERPO — Asociado, Cobrador e Ítems
+       Fondo burdeos con texto en negritas
+       ══════════════════════════════════════════════ -->
+  <div class="inv-body-block">
+
+    <!-- Fila de asociado y cobrador -->
+    <div class="inv-parties-row">
+      <div class="inv-party-group">
+        <span class="inv-party-label-dark">RECIBIMOS A NOMBRE DE:</span>
+        <!-- CAMPO: Asociado/Comprador → .inv-buyer
+             Equivalente a nombreComprador en MongoDB -->
+        <span class="inv-buyer"><%= factura.nombreComprador %></span>
+      </div>
+      <div class="inv-party-group">
+        <span class="inv-party-label-dark">RECIBE:</span>
+        <!-- CAMPO: Cobrador/Vendedor → .inv-seller
+             Equivalente a nombreVendedor en MongoDB -->
+        <span class="inv-seller"><%= factura.nombreVendedor %></span>
+      </div>
+    </div>
+
+    <!-- Tabla de ítems -->
+    <div class="inv-items-dark">
+
+      <!-- Cabecera de columnas -->
+      <div class="inv-items-dark-header">
+        <div>CONCEPTO</div>
+        <div style="text-align:center">CANTIDAD</div>
+        <div style="text-align:right">PRECIO UNIT.</div>
+        <div style="text-align:right">SUBTOTAL</div>
+      </div>
+
+      <!-- Filas de ítems -->
+      <% factura.items.forEach(function(item) { %>
+        <div class="inv-item-dark-row">
+          <!-- CAMPO: Concepto del ítem → .inv-item-concept -->
+          <div class="inv-item-concept"><%= item.concepto %></div>
+          <!-- CAMPO: Cantidad → .inv-item-qty -->
+          <div class="inv-item-qty"><%= item.cantidad %></div>
+          <!-- CAMPO: Precio unitario → .inv-item-price -->
+          <div class="inv-item-price">&#x20A1;<%= parseFloat(item.precio).toFixed(2) %></div>
+          <!-- CAMPO: Subtotal → .inv-item-subtotal -->
+          <div class="inv-item-subtotal">&#x20A1;<%= parseFloat(item.subtotal).toFixed(2) %></div>
+        </div>
+      <% }) %>
+
+      <!-- Filas vacías para rellenar espacio (aspecto de formulario físico) -->
+      <% for (var i = factura.items.length; i < 4; i++) { %>
+        <div class="inv-item-dark-row inv-item-empty">
+          <div>&nbsp;</div><div></div><div></div><div></div>
+        </div>
+      <% } %>
+
+    </div><!-- /inv-items-dark -->
+
+    <!-- Total -->
+    <div class="inv-total-dark">
+      <span class="inv-total-label-dark">TOTAL:</span>
+      <!-- CAMPO: Total de la factura → .inv-total-amount -->
+      <span class="inv-total-amount">&#x20A1;<%= parseFloat(factura.total).toFixed(2) %></span>
+    </div>
+
+    <% if (factura.anulada) { %>
+      <div style="text-align:center;margin-top:10px;font-size:18px;font-weight:900;
+                  color:#ff4444;letter-spacing:4px;border:3px solid #ff4444;padding:6px;">
+        ANULADA
+      </div>
+    <% } %>
+
+  </div><!-- /inv-body-block -->
+
+  <!-- ══ PIE ══ -->
+  <div class="invoice-footer">
+    Asociacion Deportiva de Voleibol Corazon Moraviano &nbsp;&middot;&nbsp; <%= factura.numeroFactura %>
+    &nbsp;&middot;&nbsp; Emitido por: <%= factura.creadoPor ? factura.creadoPor.nombreCompleto : '' %>
+  </div>
+
+</div><!-- /invoice-paper -->

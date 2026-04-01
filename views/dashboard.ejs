@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('partials/header') %>
+<main class="app-content">
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Facturas</div>
+      <div class="stat-value"><%= stats.TotalFacturas || 0 %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Facturado Total</div>
+      <div class="stat-value">&#x20A1;<%= parseFloat(stats.TotalFacturado || 0).toFixed(2) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Conceptos</div>
+      <div class="stat-value"><%= totalConceptos %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Usuarios</div>
+      <div class="stat-value"><%= totalUsuarios %></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Facturas Recientes
+      <% if (permisosUser.includes('crear_factura')) { %>
+        <a href="/facturas/nueva" class="btn btn-accent btn-sm">+ Nueva Factura</a>
+      <% } %>
+    </div>
+
+    <% if (!facturas || facturas.length === 0) { %>
+      <div class="empty-state">
+        <div class="icon">&#x1F9FE;</div>
+        <div class="msg">No hay facturas aun</div>
+      </div>
+    <% } else { %>
+      <% facturas.forEach(function(f) { %>
+        <div class="invoice-list-item">
+          <div>
+            <div class="inv-list-id"><%= f.numeroFactura %></div>
+            <div class="inv-list-meta">
+              <%= f.nombreComprador %> &middot; Recibe: <%= f.nombreVendedor %> &middot; <%= f.fecha %>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="inv-list-amount">&#x20A1;<%= parseFloat(f.total).toFixed(2) %></div>
+            <div class="inv-list-actions">
+              <a href="/facturas/<%= f._id %>" class="btn btn-ghost btn-sm">Ver</a>
+              <% if (permisosUser.includes('imprimir_factura')) { %>
+                <a href="/facturas/<%= f._id %>?imprimir=1" target="_blank" class="btn btn-accent btn-sm">Imprimir</a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+</main>
+<script src="/js/main.js"></script>
+</body>
+</html>

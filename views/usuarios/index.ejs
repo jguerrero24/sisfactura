@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios - SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('../partials/header') %>
+<main class="app-content">
+
+  <div class="card">
+    <div class="card-title">
+      Gestion de Usuarios
+      <button class="btn btn-accent btn-sm"
+              onclick="document.getElementById('modal-nuevo-usuario').classList.remove('hidden')">
+        + Nuevo Usuario
+      </button>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre Completo</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% usuarios.forEach(function(u) { %>
+          <tr>
+            <td class="mono" style="color:var(--accent)"><%= u.username %></td>
+            <td><%= u.nombreCompleto %></td>
+            <td>
+              <span class="badge role-<%= u.rol %>">
+                <% if (u.rol === 'admin') { %>Administrador
+                <% } else if (u.rol === 'privileged') { %>Privilegiado
+                <% } else { %>Visor<% } %>
+              </span>
+            </td>
+            <td>
+              <span class="badge"
+                style="background:<%= u.activo ? 'rgba(76,175,120,.15)':'rgba(224,85,85,.12)' %>;
+                       color:<%= u.activo ? 'var(--success)':'var(--danger)' %>">
+                <%= u.activo ? 'Activo' : 'Inactivo' %>
+              </span>
+            </td>
+            <td>
+              <% if (u._id.toString() !== usuario.id) { %>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+
+                  <!-- Cambiar rol -->
+                  <form action="/usuarios/<%= u._id %>/rol" method="POST" style="display:flex;gap:6px;">
+                    <select name="rol" style="background:var(--surface2);border:1px solid var(--border);
+                            color:var(--text);border-radius:6px;padding:4px 8px;font-size:11px;">
+                      <option value="admin"      <%= u.rol==='admin'      ?'selected':'' %>>Administrador</option>
+                      <option value="privileged" <%= u.rol==='privileged' ?'selected':'' %>>Privilegiado</option>
+                      <option value="viewer"     <%= u.rol==='viewer'     ?'selected':'' %>>Visor</option>
+                    </select>
+                    <button type="submit" class="btn btn-ghost btn-sm">Cambiar Rol</button>
+                  </form>
+
+                  <!-- Activar / Desactivar -->
+                  <form action="/usuarios/<%= u._id %>/toggle" method="POST">
+                    <button type="submit" class="btn btn-sm <%= u.activo ? 'btn-danger':'btn-ghost' %>">
+                      <%= u.activo ? 'Desactivar':'Activar' %>
+                    </button>
+                  </form>
+
+                  <!-- Eliminar usuario -->
+                  <form action="/usuarios/<%= u._id %>/eliminar" method="POST"
+                        onsubmit="return confirm('Eliminar el usuario <%= u.username %>? Esta accion no se puede deshacer.')">
+                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                  </form>
+
+                </div>
+              <% } else { %>
+                <span style="color:var(--text-dim);font-size:11px;">Tu cuenta</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- ══ MODAL: Nuevo Usuario ══ -->
+<div class="modal-overlay hidden" id="modal-nuevo-usuario">
+  <div class="modal">
+    <div class="modal-title">Nuevo Usuario</div>
+    <div class="modal-subtitle">Crear una cuenta de acceso al sistema</div>
+
+    <form action="/usuarios/crear" method="POST" onsubmit="return validarNuevoUsuario()">
+
+      <div class="fields-row">
+        <div class="field">
+          <label>Usuario *</label>
+          <input type="text" name="username" id="nu-username"
+                 placeholder="Ej: jperez" autocomplete="off" required
+                 oninput="this.value = this.value.toLowerCase().replace(/\s/g,'')">
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">
+            Solo letras minusculas y numeros, sin espacios
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre Completo *</label>
+          <input type="text" name="nombreCompleto"
+                 placeholder="Ej: Juan Perez" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Rol *</label>
+        <select name="rol" required
+                style="background:var(--surface2);border:1px solid var(--border);
+                       border-radius:var(--radius);padding:10px 12px;color:var(--text);
+                       font-size:13px;width:100%;outline:none;">
+          <option value="viewer">Visor - Solo puede ver facturas y conceptos</option>
+          <option value="privileged">Privilegiado - Crea conceptos e imprime facturas</option>
+          <option value="admin">Administrador - Acceso total</option>
+        </select>
+      </div>
+
+      <div class="fields-row">
+        <div class="field">
+          <label>Contrasena *</label>
+          <input type="password" name="password" id="nu-pass"
+                 placeholder="Minimo 6 caracteres" required
+                 oninput="medirFuerzaNuevo(this.value)">
+          <div class="strength-bar" style="height:3px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden;">
+            <div class="strength-fill" id="nu-strength-fill"
+                 style="height:100%;border-radius:2px;width:0%;transition:width .3s,background .3s;"></div>
+          </div>
+          <div id="nu-strength-text" style="font-size:10px;color:var(--text-dim);margin-top:4px;"></div>
+        </div>
+        <div class="field">
+          <label>Confirmar Contrasena *</label>
+          <input type="password" name="passwordConfirm" id="nu-pass-confirm"
+                 placeholder="Repite la contrasena" required>
+          <div id="nu-match-text" style="font-size:10px;margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost"
+                onclick="document.getElementById('modal-nuevo-usuario').classList.add('hidden')">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-accent">Crear Usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/main.js"></script>
+<script>
+  // Medidor de fuerza de contrasena para nuevo usuario
+  function medirFuerzaNuevo(val) {
+    var fill = document.getElementById('nu-strength-fill');
+    var text = document.getElementById('nu-strength-text');
+    var score = 0;
+    if (val.length >= 6)  score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    var colores   = ['#e05555','#e07a35','#c8a96e','#4caf78','#2e8b57'];
+    var etiquetas = ['Muy debil','Debil','Regular','Fuerte','Muy fuerte'];
+    var pct       = [20, 40, 60, 80, 100];
+    var idx = score > 0 ? score - 1 : 0;
+    fill.style.width      = pct[idx] + '%';
+    fill.style.background = colores[idx];
+    text.textContent      = val.length > 0 ? etiquetas[idx] : '';
+    text.style.color      = colores[idx];
+  }
+
+  // Verificar que las contrasenas coincidan
+  document.getElementById('nu-pass-confirm').addEventListener('input', function() {
+    var pass    = document.getElementById('nu-pass').value;
+    var matchEl = document.getElementById('nu-match-text');
+    if (this.value.length === 0) {
+      matchEl.textContent = '';
+    } else if (pass === this.value) {
+      matchEl.textContent = 'Las contrasenas coinciden';
+      matchEl.style.color = '#4caf78';
+    } else {
+      matchEl.textContent = 'Las contrasenas no coinciden';
+      matchEl.style.color = '#e05555';
+    }
+  });
+
+  // Validar antes de enviar
+  function validarNuevoUsuario() {
+    var pass    = document.getElementById('nu-pass').value;
+    var confirm = document.getElementById('nu-pass-confirm').value;
+    if (pass.length < 6) {
+      alert('La contrasena debe tener al menos 6 caracteres.');
+      return false;
+    }
+    if (pass !== confirm) {
+      alert('Las contrasenas no coinciden.');
+      return false;
+    }
+    return true;
+  }
+
+  // Abrir modal si hay error de creacion de usuario
+  <% if (messages.error && messages.error.length) { %>
+    document.getElementById('modal-nuevo-usuario').classList.remove('hidden');
+  <% } %>
+</script>
+</body>
+</html>
+

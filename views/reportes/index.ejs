@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes - SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .filter-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
+    .filter-group { display:flex; flex-direction:column; gap:6px; position:relative; }
+    .filter-group label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+    .filter-group input {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:9px 36px 9px 12px; color:var(--text); font-size:13px; outline:none;
+      transition:var(--transition); font-family:'DM Mono',monospace; width:100%; cursor:pointer;
+    }
+    .filter-group input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+    .filter-group input[type="number"] { padding:9px 12px; cursor:default; font-family:'Instrument Sans',sans-serif; }
+    .filter-group input[type="text"]:not([readonly]) { padding:9px 12px; cursor:default; }
+    .cal-icon { position:absolute; right:10px; bottom:10px; color:var(--text-dim); pointer-events:none; font-size:15px; }
+    .filter-divider { font-size:10px; color:var(--text-dim); text-align:center; align-self:flex-end; padding-bottom:10px; }
+
+    /* Calendario flotante */
+    .datepicker-popup {
+      position:absolute; top:calc(100% + 6px); left:0; z-index:500;
+      background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg);
+      box-shadow:0 8px 32px rgba(0,0,0,.45); padding:16px; min-width:280px;
+      display:none;
+    }
+    .datepicker-popup.open { display:block; animation:dpFadeIn .15s ease; }
+    @keyframes dpFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    .dp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .dp-nav {
+      background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+      color:var(--text-muted); width:30px; height:30px; display:flex; align-items:center;
+      justify-content:center; cursor:pointer; font-size:14px; transition:var(--transition);
+    }
+    .dp-nav:hover { color:var(--accent); border-color:var(--accent); }
+    .dp-month-year { font-size:13px; font-weight:700; color:var(--text); text-align:center; }
+    .dp-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
+    .dp-weekday { text-align:center; font-size:9px; font-weight:700; letter-spacing:.8px; color:var(--text-dim); padding:3px 0; }
+    .dp-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .dp-day {
+      text-align:center; padding:6px 2px; font-size:12px; border-radius:6px; cursor:pointer;
+      color:var(--text); transition:var(--transition); font-family:'DM Mono',monospace;
+    }
+    .dp-day:hover { background:var(--surface2); color:var(--accent); }
+    .dp-day.today { color:var(--accent); font-weight:700; }
+    .dp-day.selected { background:var(--accent); color:#fff; font-weight:700; }
+    .dp-day.other-month { color:var(--text-dim); }
+    .dp-day.empty { pointer-events:none; }
+    .dp-footer { display:flex; gap:6px; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); justify-content:flex-end; }
+    .dp-btn-hoy {
+      background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px;
+      color:var(--accent); font-size:11px; font-weight:600; padding:5px 10px;
+      cursor:pointer; font-family:inherit; transition:var(--transition);
+    }
+    .dp-btn-hoy:hover { background:var(--accent); color:#fff; }
+    .dp-btn-limpiar {
+      background:transparent; border:1px solid var(--border); border-radius:6px;
+      color:var(--text-muted); font-size:11px; font-weight:600; padding:5px 10px;
+      cursor:pointer; font-family:inherit; transition:var(--transition);
+    }
+    .dp-btn-limpiar:hover { color:var(--danger); border-color:var(--danger); }
+
+    /* Stats */
+    .stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:24px; }
+    .stat-mini { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; text-align:center; }
+    .stat-mini .label { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px; }
+    .stat-mini .value { font-family:'DM Serif Display',serif; font-size:22px; color:var(--accent); line-height:1; }
+    .stat-mini .value.green { color:var(--green); }
+    .stat-mini .value.muted { color:var(--text-muted); font-size:18px; }
+
+    /* Tabla */
+    .result-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .result-table th { text-align:left; font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-dim); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .result-table td { padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+    .result-table tr:last-child td { border-bottom:none; }
+    .result-table tr:hover td { background:var(--surface2); }
+    .result-table .num { font-family:'DM Mono',monospace; color:var(--accent); font-size:12px; }
+    .result-table .monto { font-family:'DM Mono',monospace; font-weight:600; color:var(--green); text-align:right; }
+    .result-table .fecha-cell { font-family:'DM Mono',monospace; font-size:12px; color:var(--text-muted); }
+    .total-row td { background:var(--surface2) !important; font-weight:700; border-top:2px solid var(--border2); }
+
+    .empty-reporte { text-align:center; padding:48px 20px; color:var(--text-dim); }
+    .empty-reporte .icon { font-size:36px; margin-bottom:10px; }
+    .empty-reporte .msg  { font-size:13px; }
+    .btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+
+    /* Botón Excel */
+    .btn-excel {
+      background:#1d7044; color:#fff; font-family:'Instrument Sans',sans-serif;
+      font-size:12px; font-weight:600; letter-spacing:.6px; padding:8px 16px;
+      border-radius:6px; border:none; cursor:pointer; transition:var(--transition);
+      display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    }
+    .btn-excel:hover { background:#155a35; }
+  </style>
+</head>
+<body>
+<%- include('../partials/header') %>
+<main class="app-content">
+
+  <div class="card">
+    <div class="card-title">
+      Generador de Reportes
+      <div style="display:flex;gap:8px;">
+        <% if (buscado && facturas.length > 0) { %>
+          <button class="btn-excel" onclick="exportarExcel()">&#128202; Exportar Excel</button>
+          <a href="/reportes/imprimir?<%= Object.keys(filtros).map(function(k){ return filtros[k] ? k+'='+encodeURIComponent(filtros[k]) : ''; }).filter(Boolean).join('&') %>"
+             target="_blank" class="btn btn-accent btn-sm">&#128438; Imprimir PDF</a>
+        <% } %>
+      </div>
+    </div>
+
+    <form action="/reportes/buscar" method="POST" id="form-reporte">
+
+      <!-- Fechas -->
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">&#128197; Rango de Fechas</div>
+        <div class="filter-grid">
+          <div class="filter-group" id="group-desde">
+            <label>Fecha Desde</label>
+            <input type="text" name="fechaDesde" id="inp-desde" placeholder="DD-MM-AAAA"
+                   value="<%= filtros.fechaDesde || '' %>" readonly autocomplete="off">
+            <span class="cal-icon">&#128197;</span>
+            <div class="datepicker-popup" id="dp-desde"></div>
+          </div>
+          <div class="filter-divider">&#8594;</div>
+          <div class="filter-group" id="group-hasta">
+            <label>Fecha Hasta</label>
+            <input type="text" name="fechaHasta" id="inp-hasta" placeholder="DD-MM-AAAA"
+                   value="<%= filtros.fechaHasta || '' %>" readonly autocomplete="off">
+            <span class="cal-icon">&#128197;</span>
+            <div class="datepicker-popup" id="dp-hasta"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Montos -->
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">&#x20A1; Rango de Montos</div>
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>Monto Minimo</label>
+            <input type="number" name="montoMin" placeholder="0.00" min="0" step="0.01" value="<%= filtros.montoMin || '' %>">
+          </div>
+          <div class="filter-divider">hasta</div>
+          <div class="filter-group">
+            <label>Monto Maximo</label>
+            <input type="number" name="montoMax" placeholder="999999.00" min="0" step="0.01" value="<%= filtros.montoMax || '' %>">
+          </div>
+        </div>
+      </div>
+
+      <!-- Texto -->
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">&#128269; Busqueda por Texto</div>
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>N° de Recibo</label>
+            <input type="text" name="numeroFactura" placeholder="Ej: 0007 o 2026" value="<%= filtros.numeroFactura || '' %>">
+          </div>
+          <div class="filter-group">
+            <label>Nombre del Asociado</label>
+            <input type="text" name="nombreComprador" placeholder="Nombre parcial" value="<%= filtros.nombreComprador || '' %>">
+          </div>
+          <div class="filter-group">
+            <label>Cobrador (Recibe)</label>
+            <input type="text" name="nombreVendedor" placeholder="Nombre parcial" value="<%= filtros.nombreVendedor || '' %>">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" onclick="limpiarFiltros()">Limpiar</button>
+        <button type="submit" class="btn btn-accent">&#128269; Generar Reporte</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Resultados -->
+  <% if (buscado) { %>
+    <% if (stats && facturas.length > 0) { %>
+      <div class="stats-row">
+        <div class="stat-mini"><div class="label">Recibos</div><div class="value"><%= stats.cantidad %></div></div>
+        <div class="stat-mini"><div class="label">Total</div><div class="value green">&#x20A1;<%= parseFloat(stats.totalMonto).toFixed(2) %></div></div>
+        <div class="stat-mini"><div class="label">Promedio</div><div class="value muted">&#x20A1;<%= parseFloat(stats.promedioMonto).toFixed(2) %></div></div>
+        <div class="stat-mini"><div class="label">Mayor</div><div class="value muted">&#x20A1;<%= parseFloat(stats.montoMax).toFixed(2) %></div></div>
+        <div class="stat-mini"><div class="label">Menor</div><div class="value muted">&#x20A1;<%= parseFloat(stats.montoMin).toFixed(2) %></div></div>
+      </div>
+    <% } %>
+
+    <div class="card">
+      <div class="card-title">
+        Resultados
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">
+          <%= facturas.length %> recibo<%= facturas.length !== 1 ? 's' : '' %> encontrado<%= facturas.length !== 1 ? 's' : '' %>
+        </span>
+      </div>
+      <% if (facturas.length === 0) { %>
+        <div class="empty-reporte">
+          <div class="icon">&#128202;</div>
+          <div class="msg">No se encontraron recibos con los filtros aplicados.</div>
+        </div>
+      <% } else { %>
+        <div style="overflow-x:auto;">
+          <table class="result-table" id="tabla-resultados">
+            <thead>
+              <tr>
+                <th>N° Recibo</th><th>Fecha</th><th>Hora</th>
+                <th>Asociado</th><th>Cobrador</th><th>Conceptos</th>
+                <th style="text-align:right">Total</th><th>Emitido por</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% facturas.forEach(function(f) { %>
+                <tr>
+                  <td class="num"><%= f.numeroFactura %></td>
+                  <td class="fecha-cell"><%= f.fecha %></td>
+                  <td class="fecha-cell"><%= f.hora || '-' %></td>
+                  <td><%= f.nombreComprador %></td>
+                  <td style="color:var(--text-muted)"><%= f.nombreVendedor %></td>
+                  <td style="color:var(--text-muted);font-size:12px;"><%= f.items.map(function(i){ return i.concepto; }).join(', ') %></td>
+                  <td class="monto">&#x20A1;<%= parseFloat(f.total).toFixed(2) %></td>
+                  <td style="color:var(--text-muted);font-size:12px;"><%= f.creadoPor ? f.creadoPor.nombreCompleto : '-' %></td>
+                  <td><a href="/facturas/<%= f._id %>" class="btn btn-ghost btn-sm" target="_blank">Ver</a></td>
+                </tr>
+              <% }) %>
+              <tr class="total-row">
+                <td colspan="6" style="text-align:right;color:var(--text-muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;">Total del periodo</td>
+                <td class="monto" style="font-size:16px;">&#x20A1;<%= parseFloat(stats.totalMonto).toFixed(2) %></td>
+                <td colspan="2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+</main>
+
+<!-- Datos para Excel -->
+<% if (buscado && facturas.length > 0) { %>
+<script id="data-facturas" type="application/json">
+<%- JSON.stringify(facturas.map(function(f) {
+  return {
+    numero:     f.numeroFactura,
+    fecha:      f.fecha,
+    hora:       f.hora || '',
+    asociado:   f.nombreComprador,
+    cobrador:   f.nombreVendedor,
+    conceptos:  f.items.map(function(i){ return i.concepto; }).join(', '),
+    total:      f.total,
+    emitidoPor: f.creadoPor ? f.creadoPor.nombreCompleto : ''
+  };
+})) %>
+</script>
+<% } %>
+
+<script src="/js/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ═══════════════════════ DATEPICKER ═══════════════════════ */
+var MESES      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var DIAS_SEM   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
+
+function DatePicker(inputId, popupId) {
+  var self   = this;
+  self.iid   = inputId;
+  self.input = document.getElementById(inputId);
+  self.popup = document.getElementById(popupId);
+  self.sel   = null;
+  self.cur   = new Date();
+
+  var v = self.input.value;
+  if (v && /^\d{2}-\d{2}-\d{4}$/.test(v)) {
+    var p  = v.split('-');
+    self.sel = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+    self.cur = new Date(self.sel);
+  }
+
+  self.render();
+  self.input.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.querySelectorAll('.datepicker-popup.open').forEach(function(x){ x.classList.remove('open'); });
+    self.popup.classList.add('open');
+  });
+  self.popup.addEventListener('click', function(e){ e.stopPropagation(); });
+}
+
+DatePicker.prototype.render = function() {
+  var self = this, y = self.cur.getFullYear(), m = self.cur.getMonth();
+  var pd = new Date(y, m, 1).getDay(), nd = new Date(y, m+1, 0).getDate();
+  var hoy = new Date();
+  var h = '<div class="dp-header">'
+        + '<div class="dp-nav" onclick="dps[\'' + self.iid + '\'].prev()">&#8592;</div>'
+        + '<div class="dp-month-year">' + MESES[m] + ' ' + y + '</div>'
+        + '<div class="dp-nav" onclick="dps[\'' + self.iid + '\'].next()">&#8594;</div>'
+        + '</div><div class="dp-weekdays">';
+  DIAS_SEM.forEach(function(d){ h += '<div class="dp-weekday">'+d+'</div>'; });
+  h += '</div><div class="dp-days">';
+  for (var i=0; i<pd; i++) h += '<div class="dp-day empty"></div>';
+  for (var d=1; d<=nd; d++) {
+    var cls = 'dp-day';
+    if (d===hoy.getDate() && m===hoy.getMonth() && y===hoy.getFullYear()) cls += ' today';
+    if (self.sel && d===self.sel.getDate() && m===self.sel.getMonth() && y===self.sel.getFullYear()) cls += ' selected';
+    h += '<div class="'+cls+'" onclick="dps[\''+self.iid+'\'].pick('+d+','+m+','+y+')">'+d+'</div>';
+  }
+  h += '</div><div class="dp-footer">'
+     + '<button type="button" class="dp-btn-limpiar" onclick="dps[\''+self.iid+'\'].clear()">Limpiar</button>'
+     + '<button type="button" class="dp-btn-hoy" onclick="dps[\''+self.iid+'\'].today()">Hoy</button>'
+     + '</div>';
+  self.popup.innerHTML = h;
+};
+
+DatePicker.prototype.pick = function(d,m,y) {
+  this.sel = new Date(y,m,d);
+  this.input.value = String(d).padStart(2,'0')+'-'+String(m+1).padStart(2,'0')+'-'+y;
+  this.popup.classList.remove('open');
+};
+DatePicker.prototype.today  = function(){ var h=new Date(); this.pick(h.getDate(),h.getMonth(),h.getFullYear()); };
+DatePicker.prototype.clear  = function(){ this.sel=null; this.input.value=''; this.popup.classList.remove('open'); };
+DatePicker.prototype.prev   = function(){ this.cur.setMonth(this.cur.getMonth()-1); this.render(); };
+DatePicker.prototype.next   = function(){ this.cur.setMonth(this.cur.getMonth()+1); this.render(); };
+
+document.addEventListener('click', function(){ document.querySelectorAll('.datepicker-popup.open').forEach(function(x){ x.classList.remove('open'); }); });
+
+var dps = {
+  'inp-desde': new DatePicker('inp-desde','dp-desde'),
+  'inp-hasta': new DatePicker('inp-hasta','dp-hasta')
+};
+
+/* ═══════════════════════ LIMPIAR ═══════════════════════════ */
+function limpiarFiltros() {
+  document.querySelectorAll('#form-reporte input').forEach(function(i){ i.value=''; });
+  dps['inp-desde'].sel = null;
+  dps['inp-hasta'].sel = null;
+}
+
+/* ═══════════════════════ EXPORTAR EXCEL ════════════════════ */
+function exportarExcel() {
+  var el = document.getElementById('data-facturas');
+  if (!el) { alert('No hay datos para exportar.'); return; }
+
+  var datos = JSON.parse(el.textContent);
+  var hoy = new Date();
+  var dd  = String(hoy.getDate()).padStart(2,'0');
+  var mm  = String(hoy.getMonth()+1).padStart(2,'0');
+  var yy  = hoy.getFullYear();
+
+  /* ── Hoja principal: Listado ── */
+  var filas = [
+    ['Asociacion Deportiva de Voleibol Corazon Moraviano'],
+    ['Reporte de Recibos — Generado el ' + dd + '/' + mm + '/' + yy],
+    [],
+    ['N° Recibo','Fecha','Hora','Recibimos a Nombre de (Asociado)','Recibe (Cobrador)','Conceptos','Total (CRC)','Emitido por']
+  ];
+
+  datos.forEach(function(f) {
+    filas.push([f.numero, f.fecha, f.hora, f.asociado, f.cobrador, f.conceptos, parseFloat(f.total), f.emitidoPor]);
+  });
+
+  var total = datos.reduce(function(s,f){ return s + parseFloat(f.total); }, 0);
+  filas.push([]);
+  filas.push(['','','','','','TOTAL GENERAL', total, '']);
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(filas);
+
+  /* Estilos de columna */
+  ws['!cols'] = [
+    {wch:16},{wch:13},{wch:8},{wch:34},{wch:24},{wch:32},{wch:14},{wch:22}
+  ];
+
+  /* Fusionar celdas del título (fila 0: A1:H1) */
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Recibos');
+
+  /* ── Hoja resumen ── */
+  var wsRes = XLSX.utils.aoa_to_sheet([
+    ['RESUMEN DEL REPORTE'],
+    [],
+    ['Total de recibos',      datos.length],
+    ['Total facturado (CRC)', total],
+    ['Promedio por recibo',   datos.length ? parseFloat((total/datos.length).toFixed(2)) : 0],
+    ['Monto mayor',           datos.length ? Math.max.apply(null, datos.map(function(f){ return parseFloat(f.total); })) : 0],
+    ['Monto menor',           datos.length ? Math.min.apply(null, datos.map(function(f){ return parseFloat(f.total); })) : 0],
+    [],
+    ['Generado el', dd + '/' + mm + '/' + yy]
+  ]);
+  wsRes['!cols'] = [{wch:28},{wch:20}];
+
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+
+  XLSX.writeFile(wb, 'Recibos_' + dd + '-' + mm + '-' + yy + '.xlsx');
+}
+</script>
+</body>
+</html>

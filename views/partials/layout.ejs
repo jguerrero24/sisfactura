@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= titulo %> — SisFactura</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-left">
+    <a href="/dashboard" class="header-brand">SisFactura</a>
+    <nav class="nav-tabs">
+      <a href="/dashboard" class="nav-tab <%= titulo==='Dashboard' ? 'active':'' %>">Dashboard</a>
+      <% if (permisosUser.includes('ver_facturas')) { %>
+        <a href="/facturas"  class="nav-tab <%= titulo==='Facturas'   ? 'active':'' %>">Facturas</a>
+        <a href="/conceptos" class="nav-tab <%= titulo==='Conceptos'  ? 'active':'' %>">Conceptos</a>
+      <% } %>
+      <% if (permisosUser.includes('gestionar_usuarios')) { %>
+        <a href="/usuarios" class="nav-tab <%= titulo==='Usuarios' ? 'active':'' %>">Usuarios</a>
+      <% } %>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="user-badge">
+      <span class="name"><%= usuario.NombreCompleto %></span>
+      <span class="role role-<%= usuario.Rol %>">
+        <%= {admin:'Administrador', privileged:'Privilegiado', viewer:'Visor'}[usuario.Rol] %>
+      </span>
+    </div>
+    <form action="/logout" method="POST" style="margin:0">
+      <button type="submit" class="btn-logout">Salir</button>
+    </form>
+  </div>
+</header>
+
+<!-- FLASH MESSAGES -->
+<% if (messages.success && messages.success.length) { %>
+  <div class="flash flash-success"><%= messages.success[0] %></div>
+<% } %>
+<% if (messages.error && messages.error.length) { %>
+  <div class="flash flash-error"><%= messages.error[0] %></div>
+<% } %>
+
+<!-- CONTENIDO -->
+<main class="app-content">
+  <%- body %>
+</main>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesion - SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* Panel deslizante de cambio de contraseña */
+    .login-panels {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .panel-slide {
+      display: flex;
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+      width: 200%;
+    }
+
+    .panel-slide.show-change {
+      transform: translateX(-50%);
+    }
+
+    .panel-form {
+      width: 50%;
+      flex-shrink: 0;
+    }
+
+    .change-link {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .change-link:hover { color: var(--accent); }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      margin-bottom: 20px;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    .panel-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+    }
+
+    .strength-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .strength-text {
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      margin-top: 4px;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body class="login-body">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="wordmark">SisFactura</div>
+      <div class="tagline">Sistema de Facturacion</div>
+    </div>
+
+    <% if (messages.error && messages.error.length) { %>
+      <div class="flash flash-error" id="msg-error"><%= messages.error[0] %></div>
+    <% } %>
+    <% if (messages.success && messages.success.length) { %>
+      <div class="flash flash-success" id="msg-success"><%= messages.success[0] %></div>
+    <% } %>
+
+    <div class="login-panels">
+      <div class="panel-slide" id="panel-slide">
+
+        <!-- ══ PANEL 1: LOGIN ══ -->
+        <div class="panel-form">
+          <form action="/login" method="POST" id="form-login">
+            <div class="form-group">
+              <label>Usuario</label>
+              <input type="text" name="username" id="login-username"
+                     placeholder="Ingrese su usuario" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+              <label>Contrasena</label>
+              <input type="password" name="password"
+                     placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+            </div>
+            <button type="submit" class="btn-primary">Ingresar</button>
+          </form>
+
+          <button class="change-link" onclick="mostrarCambio()" type="button">
+            Cambiar contrasena
+          </button>
+        </div>
+
+        <!-- ══ PANEL 2: CAMBIAR CONTRASEÑA ══ -->
+        <div class="panel-form" style="padding-left: 32px;">
+          <button class="back-link" onclick="mostrarLogin()" type="button">
+            &#8592; Volver al login
+          </button>
+
+          <div class="panel-title">Cambiar contrasena</div>
+          <div class="panel-subtitle">Ingresa tu usuario y define una nueva contrasena</div>
+
+          <form action="/cambiar-password" method="POST" id="form-cambio" onsubmit="return validarCambio()">
+
+            <div class="form-group">
+              <label>Usuario</label>
+              <input type="text" name="username" id="cambio-username"
+                     placeholder="Tu nombre de usuario" autocomplete="off" required>
+            </div>
+
+            <div class="form-group">
+              <label>Contrasena actual</label>
+              <input type="password" name="passwordActual"
+                     placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+            </div>
+
+            <div class="form-group">
+              <label>Nueva contrasena</label>
+              <input type="password" name="passwordNueva" id="pass-nueva"
+                     placeholder="Minimo 6 caracteres" required oninput="medirFuerza(this.value)">
+              <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+              <div class="strength-text" id="strength-text"></div>
+            </div>
+
+            <div class="form-group">
+              <label>Confirmar nueva contrasena</label>
+              <input type="password" name="passwordConfirm" id="pass-confirm"
+                     placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+              <div class="strength-text" id="match-text"></div>
+            </div>
+
+            <button type="submit" class="btn-primary">Guardar nueva contrasena</button>
+          </form>
+        </div>
+
+      </div><!-- /panel-slide -->
+    </div><!-- /login-panels -->
+
+  </div><!-- /login-card -->
+
+  <script>
+    // ── Cambiar entre paneles ────────────────────────────────
+    function mostrarCambio() {
+      document.getElementById('panel-slide').classList.add('show-change');
+    }
+
+    function mostrarLogin() {
+      document.getElementById('panel-slide').classList.remove('show-change');
+    }
+
+    // ── Medidor de fuerza de contraseña ─────────────────────
+    function medirFuerza(val) {
+      var fill = document.getElementById('strength-fill');
+      var text = document.getElementById('strength-text');
+      var score = 0;
+
+      if (val.length >= 6)  score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      var colores = ['#e05555','#e07a35','#c8a96e','#4caf78','#2e8b57'];
+      var etiquetas = ['Muy debil','Debil','Regular','Fuerte','Muy fuerte'];
+      var pct = [20, 40, 60, 80, 100];
+
+      var idx = score > 0 ? score - 1 : 0;
+      fill.style.width = pct[idx] + '%';
+      fill.style.background = colores[idx];
+      text.textContent = val.length > 0 ? etiquetas[idx] : '';
+      text.style.color = colores[idx];
+    }
+
+    // ── Validar que las contraseñas coincidan ────────────────
+    document.getElementById('pass-confirm') && document.getElementById('pass-confirm').addEventListener('input', function() {
+      var nueva   = document.getElementById('pass-nueva').value;
+      var confirm = this.value;
+      var matchEl = document.getElementById('match-text');
+      if (confirm.length === 0) {
+        matchEl.textContent = '';
+      } else if (nueva === confirm) {
+        matchEl.textContent = 'Las contrasenas coinciden';
+        matchEl.style.color = '#4caf78';
+      } else {
+        matchEl.textContent = 'Las contrasenas no coinciden';
+        matchEl.style.color = '#e05555';
+      }
+    });
+
+    function validarCambio() {
+      var nueva   = document.getElementById('pass-nueva').value;
+      var confirm = document.getElementById('pass-confirm').value;
+      if (nueva.length < 6) {
+        alert('La nueva contrasena debe tener al menos 6 caracteres.');
+        return false;
+      }
+      if (nueva !== confirm) {
+        alert('Las contrasenas no coinciden.');
+        return false;
+      }
+      return true;
+    }
+
+    // Si hay error de cambio de contraseña, mostrar ese panel
+    var msgError = document.getElementById('msg-error');
+    if (msgError && msgError.textContent.indexOf('contrasena') !== -1) {
+      mostrarCambio();
+    }
+
+    // Auto-dismiss mensajes
+    setTimeout(function() {
+      var msgs = document.querySelectorAll('.flash');
+      for (var i = 0; i < msgs.length; i++) {
+        msgs[i].style.transition = 'opacity .4s';
+        msgs[i].style.opacity = '0';
+      }
+    }, 4000);
+  </script>
+</body>
+</html>

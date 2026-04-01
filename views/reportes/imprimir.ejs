@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Recibos</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      padding: 32px 40px;
+      font-size: 13px;
+    }
+
+    /* ── Encabezado del reporte ── */
+    .reporte-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 2px solid #1a1a1a;
+    }
+
+    .reporte-org {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .reporte-sub {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .reporte-meta {
+      text-align: right;
+    }
+
+    .reporte-titulo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #4a8bbf;
+      margin-bottom: 4px;
+    }
+
+    .reporte-fecha-gen {
+      font-size: 11px;
+      color: #888;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Filtros aplicados ── */
+    .filtros-aplicados {
+      background: #f0f6ff;
+      border: 1px solid #c8d8ec;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 11px;
+      color: #444;
+    }
+
+    .filtros-titulo {
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #4a8bbf;
+      margin-bottom: 8px;
+    }
+
+    .filtros-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-item strong {
+      color: #333;
+    }
+
+    /* ── Estadísticas ── */
+    .stats-print {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .stat-print {
+      border: 1px solid #dde;
+      border-radius: 6px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .stat-print .lbl {
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .stat-print .val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: #4a8bbf;
+    }
+
+    /* ── Tabla de recibos ── */
+    .tabla-reporte {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .tabla-reporte th {
+      background: #4a8bbf;
+      color: #fff;
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .tabla-reporte td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+
+    .tabla-reporte tr:nth-child(even) td {
+      background: #f8fbff;
+    }
+
+    .tabla-reporte .num {
+      font-family: 'DM Mono', monospace;
+      color: #4a8bbf;
+      font-size: 11px;
+    }
+
+    .tabla-reporte .monto {
+      font-family: 'DM Mono', monospace;
+      text-align: right;
+      font-weight: 700;
+      color: #2e8a50;
+    }
+
+    .tabla-reporte .fecha-c {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Fila total */
+    .fila-total td {
+      background: #eef4fb !important;
+      font-weight: 700;
+      border-top: 2px solid #4a8bbf;
+      border-bottom: none;
+    }
+
+    .fila-total .monto {
+      font-size: 16px;
+      color: #4a8bbf;
+    }
+
+    /* ── Pie del reporte ── */
+    .reporte-footer {
+      margin-top: 32px;
+      padding-top: 14px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    /* Botones no imprimir */
+    .no-print {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .btn-imp {
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+    }
+
+    .btn-cerrar {
+      background: #eee;
+      color: #333;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print">
+    <button class="btn-cerrar" onclick="window.close()">Cerrar</button>
+    <button class="btn-imp" onclick="window.print()">&#128438; Imprimir / Guardar PDF</button>
+  </div>
+
+  <!-- Encabezado -->
+  <div class="reporte-header">
+    <div>
+      <div class="reporte-org">Asociacion Deportiva de Voleibol Corazon Moraviano</div>
+      <div class="reporte-sub">Cedula Juridica: 3-002-933405 &nbsp;&middot;&nbsp; advocomo@gmail.com</div>
+    </div>
+    <div class="reporte-meta">
+      <div class="reporte-titulo">Reporte de Recibos</div>
+      <div class="reporte-fecha-gen">Generado: <%= generadoEn %></div>
+    </div>
+  </div>
+
+  <!-- Filtros aplicados -->
+  <% var hayFiltros = filtros.fechaDesde || filtros.fechaHasta || filtros.montoMin || filtros.montoMax || filtros.numeroFactura || filtros.nombreComprador || filtros.nombreVendedor; %>
+  <% if (hayFiltros) { %>
+    <div class="filtros-aplicados">
+      <div class="filtros-titulo">Filtros aplicados</div>
+      <div class="filtros-row">
+        <% if (filtros.fechaDesde || filtros.fechaHasta) { %>
+          <div class="filtro-item">
+            <strong>Periodo:</strong>
+            <%= filtros.fechaDesde || '...' %> &rarr; <%= filtros.fechaHasta || '...' %>
+          </div>
+        <% } %>
+        <% if (filtros.montoMin || filtros.montoMax) { %>
+          <div class="filtro-item">
+            <strong>Monto:</strong>
+            &#x20A1;<%= filtros.montoMin || '0' %> &mdash; &#x20A1;<%= filtros.montoMax || '&infin;' %>
+          </div>
+        <% } %>
+        <% if (filtros.numeroFactura) { %>
+          <div class="filtro-item"><strong>N° Recibo:</strong> <%= filtros.numeroFactura %></div>
+        <% } %>
+        <% if (filtros.nombreComprador) { %>
+          <div class="filtro-item"><strong>Asociado:</strong> <%= filtros.nombreComprador %></div>
+        <% } %>
+        <% if (filtros.nombreVendedor) { %>
+          <div class="filtro-item"><strong>Cobrador:</strong> <%= filtros.nombreVendedor %></div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Estadísticas -->
+  <div class="stats-print">
+    <div class="stat-print">
+      <div class="lbl">Recibos</div>
+      <div class="val"><%= facturas.length %></div>
+    </div>
+    <div class="stat-print">
+      <div class="lbl">Total</div>
+      <div class="val">&#x20A1;<%= parseFloat(totalMonto).toFixed(2) %></div>
+    </div>
+    <div class="stat-print">
+      <div class="lbl">Promedio</div>
+      <div class="val">&#x20A1;<%= facturas.length ? parseFloat(totalMonto / facturas.length).toFixed(2) : '0.00' %></div>
+    </div>
+    <div class="stat-print">
+      <div class="lbl">Mayor</div>
+      <div class="val">&#x20A1;<%= facturas.length ? parseFloat(Math.max.apply(null, facturas.map(function(f){ return f.total; }))).toFixed(2) : '0.00' %></div>
+    </div>
+    <div class="stat-print">
+      <div class="lbl">Menor</div>
+      <div class="val">&#x20A1;<%= facturas.length ? parseFloat(Math.min.apply(null, facturas.map(function(f){ return f.total; }))).toFixed(2) : '0.00' %></div>
+    </div>
+  </div>
+
+  <!-- Tabla de recibos -->
+  <table class="tabla-reporte">
+    <thead>
+      <tr>
+        <th>N° Recibo</th>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Asociado (Recibimos a nombre de)</th>
+        <th>Recibe (Cobrador)</th>
+        <th>Conceptos</th>
+        <th style="text-align:right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% facturas.forEach(function(f) { %>
+        <tr>
+          <td class="num"><%= f.numeroFactura %></td>
+          <td class="fecha-c"><%= f.fecha %></td>
+          <td class="fecha-c"><%= f.hora || '-' %></td>
+          <td><%= f.nombreComprador %></td>
+          <td style="color:#666"><%= f.nombreVendedor %></td>
+          <td style="color:#666;font-size:11px;"><%= f.items.map(function(i){ return i.concepto; }).join(', ') %></td>
+          <td class="monto">&#x20A1;<%= parseFloat(f.total).toFixed(2) %></td>
+        </tr>
+      <% }) %>
+
+      <!-- Fila total -->
+      <tr class="fila-total">
+        <td colspan="6" style="text-align:right;color:#666;font-size:10px;letter-spacing:1px;text-transform:uppercase;">
+          Total del periodo (<%= facturas.length %> recibos)
+        </td>
+        <td class="monto">&#x20A1;<%= parseFloat(totalMonto).toFixed(2) %></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pie del reporte -->
+  <div class="reporte-footer">
+    <span>Asociacion Deportiva de Voleibol Corazon Moraviano &nbsp;&middot;&nbsp; advocomo@gmail.com</span>
+    <span>Generado el <%= generadoEn %></span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>

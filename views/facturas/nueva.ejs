@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nueva Factura - SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('../partials/header') %>
+<main class="app-content">
+  <div class="card" style="max-width:820px;margin:0 auto;">
+    <div class="card-title">
+      Nueva Factura
+      <a href="/facturas" class="btn btn-ghost btn-sm">&larr; Volver</a>
+    </div>
+
+    <% if (messages.error && messages.error.length) { %>
+      <div class="flash flash-error" style="margin-bottom:20px;border-radius:8px;"><%= messages.error[0] %></div>
+    <% } %>
+
+    <form action="/facturas" method="POST" id="form-factura">
+
+      <div class="section-label">Asociado y Cobrador</div>
+      <div class="fields-row">
+        <div class="field">
+          <label>Recibimos a nombre de (Asociado) *</label>
+          <input type="text" name="nombreComprador" placeholder="Nombre del asociado" required>
+        </div>
+        <div class="field">
+          <label>Recibe (Cobrador) *</label>
+          <input type="text" name="nombreVendedor" placeholder="Nombre del cobrador" required>
+        </div>
+      </div>
+
+      <div class="field" style="max-width:220px;margin-top:4px;">
+        <label>Fecha (DD-MM-AAAA) *</label>
+        <input type="text" name="fecha" id="campo-fecha" placeholder="DD-MM-AAAA" maxlength="10" required>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">
+        Items de la Factura
+        <button type="button" class="btn btn-ghost btn-sm" onclick="agregarItem()">+ Agregar item</button>
+      </div>
+
+      <div class="items-header">
+        <span>Concepto del catalogo</span>
+        <span>Nombre</span>
+        <span style="text-align:center">Cantidad</span>
+        <span style="text-align:right">Precio</span>
+        <span style="text-align:right">Subtotal</span>
+        <span></span>
+      </div>
+
+      <div id="items-container"></div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:2px solid var(--border);">
+        <div style="text-align:right;">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Total</div>
+          <div id="total-display" style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--accent);">&#x20A1;0.00</div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:24px;">
+        <a href="/facturas" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-accent">Crear Factura</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="/js/main.js"></script>
+<script>
+var CONCEPTOS = <%- JSON.stringify(conceptos) %>;
+
+document.addEventListener('DOMContentLoaded', function() {
+  var hoy  = new Date();
+  var dd   = String(hoy.getDate()).padStart(2, '0');
+  var mm   = String(hoy.getMonth() + 1).padStart(2, '0');
+  var yyyy = hoy.getFullYear();
+  document.getElementById('campo-fecha').value = dd + '-' + mm + '-' + yyyy;
+  agregarItem();
+});
+
+function agregarItem() {
+  var container = document.getElementById('items-container');
+
+  var optHTML = '';
+  if (CONCEPTOS.length === 0) {
+    optHTML = '<option value="">-- Sin conceptos --</option>';
+  } else {
+    for (var i = 0; i < CONCEPTOS.length; i++) {
+      var c = CONCEPTOS[i];
+      var label = c.nombre;
+      if (c.precioSugerido > 0) {
+        label += ' ($' + parseFloat(c.precioSugerido).toFixed(2) + ')';
+      }
+      optHTML += '<option value="' + c._id + '" data-precio="' + c.precioSugerido + '" data-nombre="' + c.nombre + '">' + label + '</option>';
+    }
+  }
+
+  var row = document.createElement('div');
+  row.className = 'item-row';
+
+  var select = document.createElement('select');
+  select.name = 'conceptoId';
+  select.setAttribute('onchange', 'autoFill(this)');
+  select.innerHTML = '<option value="">-- Seleccionar --</option>' + optHTML;
+
+  var inputConcepto = document.createElement('input');
+  inputConcepto.type = 'text';
+  inputConcepto.name = 'concepto';
+  inputConcepto.placeholder = 'Concepto';
+  inputConcepto.required = true;
+
+  var inputCantidad = document.createElement('input');
+  inputCantidad.type = 'number';
+  inputCantidad.name = 'cantidad';
+  inputCantidad.value = '1';
+  inputCantidad.min = '0.01';
+  inputCantidad.step = '0.01';
+  inputCantidad.setAttribute('oninput', 'calcularTotal()');
+
+  var inputPrecio = document.createElement('input');
+  inputPrecio.type = 'number';
+  inputPrecio.name = 'precio';
+  inputPrecio.value = '0';
+  inputPrecio.min = '0';
+  inputPrecio.step = '0.01';
+  inputPrecio.setAttribute('oninput', 'calcularTotal()');
+
+  var spanSubtotal = document.createElement('span');
+  spanSubtotal.className = 'item-subtotal';
+  spanSubtotal.textContent = '\u20A10.00';
+
+  var btnEliminar = document.createElement('button');
+  btnEliminar.type = 'button';
+  btnEliminar.className = 'btn btn-danger btn-sm';
+  btnEliminar.textContent = 'X';
+  btnEliminar.setAttribute('onclick', 'this.closest(".item-row").remove(); calcularTotal();');
+
+  row.appendChild(select);
+  row.appendChild(inputConcepto);
+  row.appendChild(inputCantidad);
+  row.appendChild(inputPrecio);
+  row.appendChild(spanSubtotal);
+  row.appendChild(btnEliminar);
+
+  container.appendChild(row);
+  calcularTotal();
+}
+
+function autoFill(select) {
+  var opt = select.selectedOptions[0];
+  var row = select.closest('.item-row');
+  if (opt && opt.dataset.nombre) {
+    row.querySelector('input[name="concepto"]').value = opt.dataset.nombre;
+    row.querySelector('input[name="precio"]').value   = opt.dataset.precio || 0;
+    calcularTotal();
+  }
+}
+
+function calcularTotal() {
+  var total = 0;
+  var rows  = document.querySelectorAll('.item-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var qty = parseFloat(row.querySelector('input[name="cantidad"]').value) || 0;
+    var prc = parseFloat(row.querySelector('input[name="precio"]').value)   || 0;
+    var sub = qty * prc;
+    row.querySelector('.item-subtotal').textContent = '\u20A1' + sub.toFixed(2);
+    total += sub;
+  }
+  document.getElementById('total-display').textContent = '\u20A1' + total.toFixed(2);
+}
+</script>
+</body>
+</html>

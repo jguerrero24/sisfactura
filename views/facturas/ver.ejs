@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= factura.numeroFactura %> — SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('../partials/header') %>
+<main class="app-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <a href="/facturas" class="btn btn-ghost btn-sm">← Volver</a>
+    <div style="display:flex;gap:10px;">
+      <% if (permisosUser.includes('imprimir_factura')) { %>
+        <a href="/facturas/<%= factura._id %>?imprimir=1" target="_blank" class="btn btn-accent">🖨 Imprimir</a>
+      <% } %>
+      <% if (permisosUser.includes('gestionar_usuarios') && !factura.anulada) { %>
+        <form action="/facturas/<%= factura._id %>/anular" method="POST"
+              onsubmit="return confirm('¿Anular la factura <%= factura.numeroFactura %>?')">
+          <button type="submit" class="btn btn-danger">Anular Factura</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+  <%- include('../partials/factura-paper') %>
+</main>
+<script src="/js/main.js"></script>
+</body>
+</html>

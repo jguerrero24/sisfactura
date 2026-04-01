@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceptos — SisFactura</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('../partials/header') %>
+<main class="app-content">
+
+  <% if (!permisosUser.includes('gestionar_conceptos')) { %>
+    <div class="perm-banner">👁 Modo solo lectura — no tiene permisos para agregar o eliminar conceptos.</div>
+  <% } %>
+
+  <div class="card">
+    <div class="card-title">
+      Catálogo de Conceptos
+      <% if (permisosUser.includes('gestionar_conceptos')) { %>
+        <button class="btn btn-accent btn-sm" onclick="document.getElementById('modal-concepto').classList.remove('hidden')">
+          + Nuevo Concepto
+        </button>
+      <% } %>
+    </div>
+
+    <% if (!conceptos || conceptos.length === 0) { %>
+      <div class="empty-state"><div class="icon">📋</div><div class="msg">No hay conceptos en el catálogo</div></div>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio Sugerido</th>
+            <th>Creado Por</th>
+            <% if (permisosUser.includes('gestionar_conceptos')) { %><th>Acciones</th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% conceptos.forEach(function(c) { %>
+            <tr>
+              <td style="font-weight:600"><%= c.nombre %></td>
+              <td style="color:var(--text-muted)"><%= c.descripcion || '—' %></td>
+              <td class="mono"><%= c.precioSugerido > 0 ? '&#x20A1;' + parseFloat(c.precioSugerido).toFixed(2) : '&#x2014;' %></td>
+              <td style="color:var(--text-muted);font-size:12px"><%= c.creadoPor?.nombreCompleto || '—' %></td>
+              <% if (permisosUser.includes('gestionar_conceptos')) { %>
+                <td>
+                  <form action="/conceptos/<%= c._id %>/desactivar" method="POST" style="display:inline"
+                        onsubmit="return confirm('¿Desactivar \"<%= c.nombre %>\"?')">
+                    <button type="submit" class="btn btn-danger btn-sm">Desactivar</button>
+                  </form>
+                </td>
+              <% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+
+<!-- Modal nuevo concepto -->
+<% if (permisosUser.includes('gestionar_conceptos')) { %>
+<div class="modal-overlay hidden" id="modal-concepto">
+  <div class="modal">
+    <div class="modal-title">Nuevo Concepto</div>
+    <div class="modal-subtitle">Agregar al catálogo de facturación</div>
+    <form action="/conceptos" method="POST">
+      <div class="field">
+        <label>Nombre *</label>
+        <input type="text" name="nombre" placeholder="Ej: Donación, Almuerzo, Pago de servicio..." required>
+      </div>
+      <div class="field">
+        <label>Descripción</label>
+        <input type="text" name="descripcion" placeholder="Descripción breve (opcional)">
+      </div>
+      <div class="field">
+        <label>Precio Sugerido</label>
+        <input type="number" name="precioSugerido" placeholder="0.00" min="0" step="0.01" value="0">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-concepto').classList.add('hidden')">Cancelar</button>
+        <button type="submit" class="btn btn-accent">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<script src="/js/main.js"></script>
+</body>
+</html>
