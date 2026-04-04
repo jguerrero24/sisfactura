@@ -1,8 +1,14 @@
 // ============================================================
 // controllers/ReporteController.js — Controlador de Reportes
+// CORREGIDO: Escape de regex, validaciones mejoradas
 // ============================================================
 
 const Factura = require('../models/FacturaModel');
+
+// Función para escapar caracteres especiales en expresiones regulares
+const escapeRegex = (str) => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
 
 const ReporteController = {
 
@@ -17,7 +23,7 @@ const ReporteController = {
         buscado:  false
       });
     } catch (err) {
-      console.error('[ReporteController.index]', err);
+      console.error('[ReporteController.index] Error interno del servidor');
       req.flash('error', 'Error al cargar los reportes.');
       res.redirect('/dashboard');
     }
@@ -40,23 +46,25 @@ const ReporteController = {
       const query = { anulada: false };
 
       // ── Filtro por rango de fechas (formato DD-MM-AAAA) ──────
-      // Convertimos a comparación de strings porque fecha se guarda como DD-MM-AAAA
-      // Usamos createdAt para filtrar por rango real de tiempo
       if (fechaDesde || fechaHasta) {
         query.createdAt = {};
         if (fechaDesde) {
-          // Convertir DD-MM-AAAA a Date
           const partsD = fechaDesde.split('-');
-          if (partsD.length === 3) {
+          if (partsD.length === 3 && /^\d{2}-\d{2}-\d{4}$/.test(fechaDesde)) {
             const d = new Date(partsD[2], partsD[1] - 1, partsD[0], 0, 0, 0);
-            query.createdAt.$gte = d;
+            // Validar que sea fecha válida
+            if (!isNaN(d.getTime())) {
+              query.createdAt.$gte = d;
+            }
           }
         }
         if (fechaHasta) {
           const partsH = fechaHasta.split('-');
-          if (partsH.length === 3) {
+          if (partsH.length === 3 && /^\d{2}-\d{2}-\d{4}$/.test(fechaHasta)) {
             const d = new Date(partsH[2], partsH[1] - 1, partsH[0], 23, 59, 59);
-            query.createdAt.$lte = d;
+            if (!isNaN(d.getTime())) {
+              query.createdAt.$lte = d;
+            }
           }
         }
       }
@@ -65,32 +73,48 @@ const ReporteController = {
       if (montoMin || montoMax) {
         query.total = {};
         if (montoMin && !isNaN(parseFloat(montoMin))) {
-          query.total.$gte = parseFloat(montoMin);
+          const min = parseFloat(montoMin);
+          if (min >= 0) {
+            query.total.$gte = min;
+          }
         }
         if (montoMax && !isNaN(parseFloat(montoMax))) {
-          query.total.$lte = parseFloat(montoMax);
+          const max = parseFloat(montoMax);
+          if (max >= 0 && max <= 999999.99) {
+            query.total.$lte = max;
+          }
         }
       }
 
-      // ── Filtro por número de recibo (búsqueda parcial) ───────
+      // ── Filtro por número de recibo (búsqueda parcial con escape) ───────
       if (numeroFactura && numeroFactura.trim()) {
-        query.numeroFactura = { $regex: numeroFactura.trim(), $options: 'i' };
+        const numFact = numeroFactura.trim();
+        if (numFact.length <= 50) { // Limitar longitud
+          query.numeroFactura = { $regex: escapeRegex(numFact), $options: 'i' };
+        }
       }
 
       // ── Filtro por nombre de asociado ────────────────────────
       if (nombreComprador && nombreComprador.trim()) {
-        query.nombreComprador = { $regex: nombreComprador.trim(), $options: 'i' };
+        const nomComp = nombreComprador.trim();
+        if (nomComp.length <= 200) {
+          query.nombreComprador = { $regex: escapeRegex(nomComp), $options: 'i' };
+        }
       }
 
       // ── Filtro por cobrador ──────────────────────────────────
       if (nombreVendedor && nombreVendedor.trim()) {
-        query.nombreVendedor = { $regex: nombreVendedor.trim(), $options: 'i' };
+        const nomVend = nombreVendedor.trim();
+        if (nomVend.length <= 200) {
+          query.nombreVendedor = { $regex: escapeRegex(nomVend), $options: 'i' };
+        }
       }
 
-      // Ejecutar búsqueda
+      // Ejecutar búsqueda con límite de resultados
       const facturas = await Factura.find(query)
         .populate('creadoPor', 'nombreCompleto')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .limit(1000); // Limitar a 1000 resultados
 
       // Calcular estadísticas del resultado
       const totalMonto = facturas.reduce(function(s, f) { return s + f.total; }, 0);
@@ -113,7 +137,7 @@ const ReporteController = {
       });
 
     } catch (err) {
-      console.error('[ReporteController.buscar]', err);
+      console.error('[ReporteController.buscar] Error interno del servidor');
       req.flash('error', 'Error al generar el reporte.');
       res.redirect('/reportes');
     }
@@ -127,26 +151,50 @@ const ReporteController = {
 
       const query = { anulada: false };
 
+      // Mismo proceso de validación que en buscar()
       if (fechaDesde || fechaHasta) {
         query.createdAt = {};
-        if (fechaDesde) {
+        if (fechaDesde && /^\d{2}-\d{2}-\d{4}$/.test(fechaDesde)) {
           const p = fechaDesde.split('-');
-          if (p.length === 3) query.createdAt.$gte = new Date(p[2], p[1]-1, p[0], 0, 0, 0);
+          const d = new Date(p[2], p[1]-1, p[0], 0, 0, 0);
+          if (!isNaN(d.getTime())) query.createdAt.$gte = d;
         }
-        if (fechaHasta) {
+        if (fechaHasta && /^\d{2}-\d{2}-\d{4}$/.test(fechaHasta)) {
           const p = fechaHasta.split('-');
-          if (p.length === 3) query.createdAt.$lte = new Date(p[2], p[1]-1, p[0], 23, 59, 59);
+          const d = new Date(p[2], p[1]-1, p[0], 23, 59, 59);
+          if (!isNaN(d.getTime())) query.createdAt.$lte = d;
         }
       }
-      if (montoMin)         query.total             = { ...query.total, $gte: parseFloat(montoMin) };
-      if (montoMax)         query.total             = { ...query.total, $lte: parseFloat(montoMax) };
-      if (numeroFactura)    query.numeroFactura      = { $regex: numeroFactura, $options: 'i' };
-      if (nombreComprador)  query.nombreComprador    = { $regex: nombreComprador, $options: 'i' };
-      if (nombreVendedor)   query.nombreVendedor     = { $regex: nombreVendedor, $options: 'i' };
+      
+      if (montoMin && !isNaN(parseFloat(montoMin))) {
+        const min = parseFloat(montoMin);
+        if (min >= 0) {
+          query.total = query.total || {};
+          query.total.$gte = min;
+        }
+      }
+      if (montoMax && !isNaN(parseFloat(montoMax))) {
+        const max = parseFloat(montoMax);
+        if (max >= 0 && max <= 999999.99) {
+          query.total = query.total || {};
+          query.total.$lte = max;
+        }
+      }
+      
+      if (numeroFactura && numeroFactura.trim().length <= 50) {
+        query.numeroFactura = { $regex: escapeRegex(numeroFactura.trim()), $options: 'i' };
+      }
+      if (nombreComprador && nombreComprador.trim().length <= 200) {
+        query.nombreComprador = { $regex: escapeRegex(nombreComprador.trim()), $options: 'i' };
+      }
+      if (nombreVendedor && nombreVendedor.trim().length <= 200) {
+        query.nombreVendedor = { $regex: escapeRegex(nombreVendedor.trim()), $options: 'i' };
+      }
 
       const facturas = await Factura.find(query)
         .populate('creadoPor', 'nombreCompleto')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .limit(1000);
 
       const totalMonto = facturas.reduce(function(s, f) { return s + f.total; }, 0);
 
@@ -158,7 +206,7 @@ const ReporteController = {
         generadoEn:  new Date().toLocaleString('es-CR')
       });
     } catch (err) {
-      console.error('[ReporteController.imprimir]', err);
+      console.error('[ReporteController.imprimir] Error interno del servidor');
       res.redirect('/reportes');
     }
   }

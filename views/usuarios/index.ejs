@@ -102,15 +102,15 @@
           <label>Usuario *</label>
           <input type="text" name="username" id="nu-username"
                  placeholder="Ej: jperez" autocomplete="off" required
-                 oninput="this.value = this.value.toLowerCase().replace(/\s/g,'')">
+                 oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
           <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">
-            Solo letras minusculas y numeros, sin espacios
+            3-20 caracteres: letras minusculas, numeros y guiones bajos
           </div>
         </div>
         <div class="field">
           <label>Nombre Completo *</label>
           <input type="text" name="nombreCompleto"
-                 placeholder="Ej: Juan Perez" required>
+                 placeholder="Ej: Juan Perez" required maxlength="150">
         </div>
       </div>
 
@@ -122,7 +122,7 @@
                        font-size:13px;width:100%;outline:none;">
           <option value="viewer">Visor - Solo puede ver facturas y conceptos</option>
           <option value="privileged">Privilegiado - Crea conceptos e imprime facturas</option>
-          <option value="admin">Administrador - Acceso total</option>
+          <option value="admin">Administrador - Acceso total (incluyendo anular)</option>
         </select>
       </div>
 
@@ -130,7 +130,7 @@
         <div class="field">
           <label>Contrasena *</label>
           <input type="password" name="password" id="nu-pass"
-                 placeholder="Minimo 6 caracteres" required
+                 placeholder="Minimo 10 caracteres: mayuscula, minuscula, numero" required
                  oninput="medirFuerzaNuevo(this.value)">
           <div class="strength-bar" style="height:3px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden;">
             <div class="strength-fill" id="nu-strength-fill"
@@ -164,19 +164,28 @@
     var fill = document.getElementById('nu-strength-fill');
     var text = document.getElementById('nu-strength-text');
     var score = 0;
-    if (val.length >= 6)  score++;
+    
     if (val.length >= 10) score++;
+    if (val.length >= 16) score++;
     if (/[A-Z]/.test(val)) score++;
     if (/[0-9]/.test(val)) score++;
     if (/[^A-Za-z0-9]/.test(val)) score++;
+    
     var colores   = ['#e05555','#e07a35','#c8a96e','#4caf78','#2e8b57'];
     var etiquetas = ['Muy debil','Debil','Regular','Fuerte','Muy fuerte'];
     var pct       = [20, 40, 60, 80, 100];
     var idx = score > 0 ? score - 1 : 0;
+    
     fill.style.width      = pct[idx] + '%';
     fill.style.background = colores[idx];
     text.textContent      = val.length > 0 ? etiquetas[idx] : '';
     text.style.color      = colores[idx];
+    
+    // Validar requisitos minimos
+    if (val.length < 10) {
+      text.textContent = 'Minimo 10 caracteres';
+      text.style.color = '#e05555';
+    }
   }
 
   // Verificar que las contrasenas coincidan
@@ -196,16 +205,42 @@
 
   // Validar antes de enviar
   function validarNuevoUsuario() {
-    var pass    = document.getElementById('nu-pass').value;
-    var confirm = document.getElementById('nu-pass-confirm').value;
-    if (pass.length < 6) {
-      alert('La contrasena debe tener al menos 6 caracteres.');
+    var username = document.getElementById('nu-username').value.trim();
+    var pass     = document.getElementById('nu-pass').value;
+    var confirm  = document.getElementById('nu-pass-confirm').value;
+    
+    // Validar username
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      alert('Username: 3-20 caracteres, solo letras minusculas, numeros y guiones bajos.');
       return false;
     }
+    
+    // Validar password
+    if (pass.length < 10) {
+      alert('La contrasena debe tener al menos 10 caracteres.');
+      return false;
+    }
+    
+    if (!/(?=.*[a-z])/.test(pass)) {
+      alert('La contrasena debe contener una letra minuscula.');
+      return false;
+    }
+    
+    if (!/(?=.*[A-Z])/.test(pass)) {
+      alert('La contrasena debe contener una letra mayuscula.');
+      return false;
+    }
+    
+    if (!/(?=.*\d)/.test(pass)) {
+      alert('La contrasena debe contener un numero.');
+      return false;
+    }
+    
     if (pass !== confirm) {
       alert('Las contrasenas no coinciden.');
       return false;
     }
+    
     return true;
   }
 
@@ -216,4 +251,3 @@
 </script>
 </body>
 </html>
-

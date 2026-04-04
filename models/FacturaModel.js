@@ -76,14 +76,9 @@ const FacturaSchema = new mongoose.Schema({
   // CAMPO: Nombre de la empresa — ESTÁTICO, guardado para referencia histórica
   nombreEmpresa: {
     type:    String,
-    default: 'Junta Administrativa Liceo Laboratorio Emma Gamboa'
+    default: 'Asociación Deportiva de Voleibol'
   },
 
-  // CAMPO: Teléfono de la empresa — ESTÁTICO
-  telefonoEmpresa: {
-    type:    String,
-    default: '2235-6785'
-  },
 
   // CAMPO: Nombre del comprador
   nombreComprador: {

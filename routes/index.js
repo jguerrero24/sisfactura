@@ -1,5 +1,7 @@
 // ============================================================
-// routes/index.js — Todas las rutas de la aplicación
+// routes/index.js — CORREGIDO
+// - Permiso separado para anular factura
+// - Validaciones de permisos adecuadas
 // ============================================================
 
 const express            = require('express');
@@ -9,7 +11,6 @@ const FacturaController  = require('../controllers/FacturaController');
 const ConceptoController = require('../controllers/ConceptoController');
 const UsuarioController  = require('../controllers/UsuarioController');
 const { requireLogin, requirePermiso } = require('../controllers/authMiddleware');
-
 const ReporteController   = require('../controllers/ReporteController');
 
 // ── Auth ─────────────────────────────────────────────────────
@@ -27,7 +28,8 @@ router.get ('/facturas',              requireLogin, requirePermiso('ver_facturas
 router.get ('/facturas/nueva',        requireLogin, requirePermiso('crear_factura'),      FacturaController.nueva);
 router.post('/facturas',              requireLogin, requirePermiso('crear_factura'),      FacturaController.crear);
 router.get ('/facturas/:id',          requireLogin, requirePermiso('ver_facturas'),       FacturaController.ver);
-router.post('/facturas/:id/anular',   requireLogin, requirePermiso('gestionar_usuarios'), FacturaController.anular);
+// CORREGIDO: Anular requiere permiso separado 'anular_factura'
+router.post('/facturas/:id/anular',   requireLogin, requirePermiso('anular_factura'),     FacturaController.anular);
 
 // ── Conceptos ────────────────────────────────────────────────
 router.get ('/conceptos',             requireLogin, requirePermiso('ver_facturas'),        ConceptoController.index);
