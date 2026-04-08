@@ -137,8 +137,8 @@ GO
 -- NOTA: En producción usar bcrypt. Aquí SHA-256 solo para demo.
 INSERT INTO Usuarios (Username, NombreCompleto, PasswordHash, RolId) VALUES
     ('admin',  'Administrador',  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a', 1),
-    ('carlos', 'Carlos Ramírez', CONVERT(NVARCHAR(256), HASHBYTES('SHA2_256', 'carlos123'), 2),     2),
-    ('laura',  'Laura Solano',   CONVERT(NVARCHAR(256), HASHBYTES('SHA2_256', 'laura123'),  2),     3);
+    ('priv', 'privilegiado', CONVERT(NVARCHAR(256), HASHBYTES('SHA2_256', 'priv123'), 2),     2),
+    ('visor',  'visor',   CONVERT(NVARCHAR(256), HASHBYTES('SHA2_256', 'visor123'),  2),     3);
 GO
 
 -- ── 10. DATOS INICIALES: Conceptos ──────────────────────────
