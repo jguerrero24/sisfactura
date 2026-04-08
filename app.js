@@ -1,9 +1,8 @@
 // ============================================================
-// app.js — ARCHIVO PRINCIPAL DE LA APLICACIÓN
-// Inicia Express y conecta a MongoDB
+// app.js — ARCHIVO PRINCIPAL CORREGIDO
+// Incluye permisos en res.locals para las vistas EJS
 // ============================================================
 
-// ⚠️ DEBE SER LA PRIMERA LÍNEA - Cargar variables de entorno
 require('dotenv').config();
 
 const express = require('express');
@@ -11,17 +10,15 @@ const path = require('path');
 const session = require('express-session');
 const flash = require('connect-flash');
 
-// Importar configuración y conexión a BD
+// Importar configuración y conexión
 const dbConnect = require('./config/db');
 const config = require('./config/app');
 const routes = require('./routes');
-const { requireLogin } = require('./controllers/authMiddleware');
 
-// Crear aplicación Express
 const app = express();
 
 // ════════════════════════════════════════════════════════════
-// 1. CONECTAR A MONGODB
+// 1. CONECTAR A MONGODB ATLAS
 // ════════════════════════════════════════════════════════════
 dbConnect();
 
@@ -62,11 +59,25 @@ app.use(session({
 app.use(flash());
 
 // ════════════════════════════════════════════════════════════
-// 7. MIDDLEWARE - USUARIO EN VISTAS
+// 7. MIDDLEWARE - USUARIO Y PERMISOS EN VISTAS
 // ════════════════════════════════════════════════════════════
+// ✅ IMPORTANTE: Este middleware pasa el usuario y permisos a las vistas
 app.use((req, res, next) => {
+  // Pasar usuario a la vista
   res.locals.usuario = req.session.usuario || null;
+  
+  // Pasar mensajes flash a la vista
   res.locals.messages = req.flash();
+  
+  // ✅ NUEVO: Pasar permisos a la vista
+  // Esto evita el error "permisosUser is not defined"
+  if (req.session.usuario) {
+    const rol = req.session.usuario.rol || 'viewer';
+    res.locals.permisosUser = config.permisos[rol] || [];
+  } else {
+    res.locals.permisosUser = [];
+  }
+  
   next();
 });
 
@@ -94,9 +105,9 @@ app.listen(PORT, () => {
   console.log('║            ✅ SISFACTURA INICIADO CORRECTAMENTE        ║');
   console.log('║                                                        ║');
   console.log('╠════════════════════════════════════════════════════════╣');
-  console.log(`║  🌐 URL:     http://localhost:${PORT}`);
-  console.log('║  📊 BD:      MongoDB Atlas (Nube)');
-  console.log('║  🔐 Login:   admin / admin123');
+  console.log('║  🌐 URL: https://sisfactura.onrender.com              ║');
+  console.log('║  📊 BD: MongoDB Atlas (Nube)                          ║');
+  console.log('║  🔐 Login: admin / admin123                           ║');
   console.log('║                                                        ║');
   console.log('╚════════════════════════════════════════════════════════╝');
   console.log('');
