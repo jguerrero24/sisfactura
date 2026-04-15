@@ -42,7 +42,7 @@
             <tr>
               <td style="font-weight:600"><%= c.nombre %></td>
               <td style="color:var(--text-muted)"><%= c.descripcion || '—' %></td>
-              <td class="mono"><%= c.precioSugerido > 0 ? '&#8353;' + parseFloat(c.precioSugerido).toFixed(2) : '&#x2014;' %></td>
+              <td class="mono"><%= c.precioSugerido > 0 ? '&#8353;' + parseFloat(c.precioSugerido).toFixed(2) : '—' %></td>
               <td style="color:var(--text-muted);font-size:12px"><%= c.creadoPor?.nombreCompleto || '—' %></td>
               <% if (permisosUser.includes('gestionar_conceptos')) { %>
                 <td>
